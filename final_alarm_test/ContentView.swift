@@ -65,14 +65,14 @@ struct ContentView: View {
     // Firestoreからデータを取得してpostContentに保存する関数
     func fetchPostContent() {
         let db = Firestore.firestore()
-        let documentRef = db.collection("投稿").document("投稿1")
+        let documentRef = db.collection("A").document("B")
         documentRef.getDocument { (document, error) in
             if let error = error {
                 print("ドキュメントの取得に失敗しました: \(error.localizedDescription)")
                 self.postContent = "エラーが発生しました"
             } else if let document = document, document.exists {
                 let data = document.data()
-                self.postContent = data?["内容"] as? String ?? "データがありません"
+                self.postContent = data?["C"] as? String ?? "データがありません"
             } else {
                 print("ドキュメントは存在しません")
                 self.postContent = "ドキュメントが存在しません"
