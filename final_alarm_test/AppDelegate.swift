@@ -1,11 +1,18 @@
 import UIKit
 import UserNotifications
+import Firebase
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         requestNotificationPermission()
         UNUserNotificationCenter.current().delegate = self
+        FirebaseApp.configure()
+        if FirebaseApp.app() == nil {
+            print("Firebaseの初期化に失敗しました")
+        } else {
+            print("Firebaseの初期化に成功しました")
+        }
         return true
     }
 

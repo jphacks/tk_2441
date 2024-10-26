@@ -1,41 +1,83 @@
 import SwiftUI
 import UserNotifications
+import FirebaseFirestore
 
 struct ContentView: View {
     @AppStorage("num") private var num: Int = 0
-
+    @State private var alarmTime = Date()
+    @State private var isNavigationActive = false
+    @State private var postContent: String = "読み込み中..."
+    
     var body: some View {
-        VStack {
-            Text("カウント数: \(num)")
-                .padding()
-            Button(action: {
-                scheduleLocalNotification()
-            }) {
-                Text("アラームを3秒後にかける")
+        NavigationView{
+            VStack {
+                Text("カウント数: \(num)")
                     .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                Text("投稿内容: \(postContent)") // Firestoreから取得した内容を表示
+                    .padding()
+                DatePicker("時間を選択", selection: $alarmTime, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(WheelDatePickerStyle())
+                    .labelsHidden()
+                    .padding()
+                Button(action: {
+                    scheduleLocalNotification(for: alarmTime)
+                    isNavigationActive = true
+                }) {
+                    Text("セット")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                
+                NavigationLink(destination: CheckView(), isActive: $isNavigationActive){
+                    EmptyView()
+                }
+            }
+            .navigationTitle("アラーム設定")
+            .onAppear {
+                fetchPostContent() // 画面表示時にFirestoreからデータを取得
             }
         }
     }
-}
 
-// ローカル通知をスケジュールする関数
-func scheduleLocalNotification() {
-    let content = UNMutableNotificationContent()
-    content.title = "アラーム"
-    content.body = "タップしてもどろう！！"
-    content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm_ap.mp3"))
+    // ローカル通知をスケジュールする関数
+    func scheduleLocalNotification(for date: Date) {
+        let content = UNMutableNotificationContent()
+        content.title = "アラーム"
+        content.body = "タップしてもどろう！！"
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm_ap.mp3"))
+        let calendar = Calendar.current
+        let dateComponents = calendar.dateComponents([.hour, .minute], from: date)
 
-    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
-    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
 
-    UNUserNotificationCenter.current().add(request) { error in
-        if error != nil {
-            print("通知のスケジュールに失敗しました: \(error?.localizedDescription ?? "")")
-        } else {
-            print("通知がスケジュールされました")
+        UNUserNotificationCenter.current().add(request) { error in
+            if error != nil {
+                print("通知のスケジュールに失敗しました: \(error?.localizedDescription ?? "")")
+            } else {
+                print("通知がスケジュールされました")
+            }
         }
     }
+
+    // Firestoreからデータを取得してpostContentに保存する関数
+    func fetchPostContent() {
+        let db = Firestore.firestore()
+        let documentRef = db.collection("投稿").document("投稿1")
+        documentRef.getDocument { (document, error) in
+            if let error = error {
+                print("ドキュメントの取得に失敗しました: \(error.localizedDescription)")
+                self.postContent = "エラーが発生しました"
+            } else if let document = document, document.exists {
+                let data = document.data()
+                self.postContent = data?["内容"] as? String ?? "データがありません"
+            } else {
+                print("ドキュメントは存在しません")
+                self.postContent = "ドキュメントが存在しません"
+            }
+        }
+    }
+
 }
