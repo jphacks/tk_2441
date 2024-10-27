@@ -94,33 +94,56 @@ struct ContentView: View {
     // ローカル通知をスケジュールする関数
     func scheduleLocalNotification(for date: Date) {
         let content = UNMutableNotificationContent()
-        let intervals = [5.0, 10.0, 15]
+        let secondInterval = Double(Int.random(in: 10...450))
+        let thirdInterval = Double(Int.random(in: 451...900))
+        let intervals = [0.0, secondInterval, thirdInterval]
+        print(intervals)
         let notificationTitles = ["アラーム","1回目の通知だよ","2回目の通知だよ"]
         let notificationMessages = ["アラームを止める","起きてるかな？","間に合うかな？"]
         //二つ目と三つ目のはわざと名前を間違えてデフォルトを読んでいる
         let notificationSounds = ["alarm_app.mp3","alarm_ap.mp3","alarm_ap.mp3"]
         var UUIDlist : [String] = []
         let calendar = Calendar.current
-        //        let dateComponents = calendar.dateComponents([.hour, .minute], from: date)
+        let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
         
         //テストのために時間指定じゃなくて強制的に5秒後に通知が来るようにしています
         //        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+        // dateComponents からターゲットの日時を生成
+        guard let targetDate = calendar.date(from: dateComponents) else {
+            print("日付の生成に失敗しました")
+            return
+        }
+
+        // 現在の時間を取得
+        let now = Date()
+
+        // ターゲットの日時と現在の時間の差を計算（秒単位）
+        let timeDifference = targetDate.timeIntervalSince(now)
+        print(timeDifference)
         
-        for i in 0...2{
+        for i in 0...2 {
             content.title = notificationTitles[i]
             content.body = notificationMessages[i]
             content.sound = UNNotificationSound(named: UNNotificationSoundName(notificationSounds[i]))
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: intervals[i], repeats: false)
-            //UUID()で識別子を生成している
+
+            var trigger: UNNotificationTrigger
+
+            if i == 0 {
+                trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+            } else {
+                let additionalInterval = intervals[i] + timeDifference
+                trigger = UNTimeIntervalNotificationTrigger(timeInterval: additionalInterval, repeats: false)
+            }
+
             let newUUID = UUID().uuidString
             UUIDlist.append(newUUID)
             let request = UNNotificationRequest(identifier: newUUID, content: content, trigger: trigger)
-            
+
             UNUserNotificationCenter.current().add(request) { error in
-                if error != nil {
-                    print("通知のスケジュールに失敗しました: \(error?.localizedDescription ?? "")")
+                if let error = error {
+                    print("通知のスケジュールに失敗しました: \(error.localizedDescription)")
                 } else {
-                    print("通知がスケジュールされました")
+                    print("通知がスケジュールされました: \(newUUID)")
                 }
             }
         }
