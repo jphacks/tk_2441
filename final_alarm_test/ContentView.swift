@@ -12,7 +12,6 @@ struct ContentView: View {
     @AppStorage("notificationID2") private var notification2UUIDString: String = ""
     @AppStorage("notificationID3") private var notification3UUIDString: String = ""
     @AppStorage("myUID") private var myUID: String = "" // ローカルにユーザーIDを保存するためのAppStorage
-    @AppStorage("myName") private var myName: String = "名無し" // ローカルにユーザーIDを保存するためのAppStorage
     private let db = Firestore.firestore()
     var body: some View {
         NavigationView{
@@ -39,7 +38,7 @@ struct ContentView: View {
                 }
                 .onAppear {
                     // ユーザーIDを生成してローカルストレージに保存
-                    generateAndStoreUserID(myName: myName)
+                    generateAndStoreUserID()
                 }
             }
             .navigationTitle("アラーム設定")
@@ -50,34 +49,30 @@ struct ContentView: View {
     }
     
     //自分のUIDの生成
-    func generateAndStoreUserID(myName: String) {
-            if myUID.isEmpty {
-                // Firestoreで新しいドキュメントを作成し、そのIDを取得
-                let userRef = db.collection("Users").document() // 自動生成のドキュメントIDを使う
-                let newUID = userRef.documentID // 自動生成されたドキュメントIDをUIDとして使用
-                let userData: [String: Any] = [
-                    "created_at": Timestamp(date: Date()), // 作成日時
-                    "name": myName // ユーザーの名前を追加
-                ]
-                // Firestoreにユーザーデータを保存
-                userRef.setData(userData) { error in
-                    if let error = error {
-                        print("ユーザーIDの保存に失敗しました: \(error.localizedDescription)")
-                    } else {
-                        print("ユーザーIDをFirestoreに保存しました: \(newUID)")
-                        
-                        // フォローサブコレクションの生成
-                        createFollowingSubcollection(for: newUID)
-                        
-                        // ローカルストレージに保存（次回起動時にも利用できるように）
-                        myUID = newUID
-                    }
+    func generateAndStoreUserID() {
+        if myUID.isEmpty {
+            // Firestoreで新しいドキュメントを作成し、そのIDを取得
+            let userRef = db.collection("Users").document() // 自動生成のドキュメントIDを使う
+            let newUID = userRef.documentID // 自動生成されたドキュメントIDをUIDとして使用
+            
+            // Firestoreにユーザーデータを保存
+            let userData = ["created_at": Timestamp(date: Date())] // 必要に応じて他のデータも追加
+            userRef.setData([:]) { error in
+                if let error = error {
+                    print("ユーザーIDの保存に失敗しました: \(error.localizedDescription)")
+                } else {
+                    print("ユーザーIDをFirestoreに保存しました: \(newUID)")
+                    //フォローサブコレクションの生成
+                    createFollowingSubcollection(for: newUID)
+                    // ローカルストレージに保存（次回起動時にも利用できるように）
+                    myUID = newUID
                 }
-            } else {
+            }
+        } else {
                 // すでにユーザーIDが存在する場合は何もしない
                 print("既存のユーザーIDを使用しています: \(myUID)")
             }
-        }
+    }
     
     // フォローリストサブコレクションを生成
     func createFollowingSubcollection(for uid: String) {
@@ -94,56 +89,33 @@ struct ContentView: View {
     // ローカル通知をスケジュールする関数
     func scheduleLocalNotification(for date: Date) {
         let content = UNMutableNotificationContent()
-        let secondInterval = Double(Int.random(in: 10...450))
-        let thirdInterval = Double(Int.random(in: 451...900))
-        let intervals = [0.0, secondInterval, thirdInterval]
-        print(intervals)
+        let intervals = [5.0, 10.0, 15]
         let notificationTitles = ["アラーム","1回目の通知だよ","2回目の通知だよ"]
         let notificationMessages = ["アラームを止める","起きてるかな？","間に合うかな？"]
         //二つ目と三つ目のはわざと名前を間違えてデフォルトを読んでいる
         let notificationSounds = ["alarm_app.mp3","alarm_ap.mp3","alarm_ap.mp3"]
         var UUIDlist : [String] = []
         let calendar = Calendar.current
-        let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        //        let dateComponents = calendar.dateComponents([.hour, .minute], from: date)
         
         //テストのために時間指定じゃなくて強制的に5秒後に通知が来るようにしています
         //        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
-        // dateComponents からターゲットの日時を生成
-        guard let targetDate = calendar.date(from: dateComponents) else {
-            print("日付の生成に失敗しました")
-            return
-        }
-
-        // 現在の時間を取得
-        let now = Date()
-
-        // ターゲットの日時と現在の時間の差を計算（秒単位）
-        let timeDifference = targetDate.timeIntervalSince(now)
-        print(timeDifference)
         
-        for i in 0...2 {
+        for i in 0...2{
             content.title = notificationTitles[i]
             content.body = notificationMessages[i]
             content.sound = UNNotificationSound(named: UNNotificationSoundName(notificationSounds[i]))
-
-            var trigger: UNNotificationTrigger
-
-            if i == 0 {
-                trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
-            } else {
-                let additionalInterval = intervals[i] + timeDifference
-                trigger = UNTimeIntervalNotificationTrigger(timeInterval: additionalInterval, repeats: false)
-            }
-
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: intervals[i], repeats: false)
+            //UUID()で識別子を生成している
             let newUUID = UUID().uuidString
             UUIDlist.append(newUUID)
             let request = UNNotificationRequest(identifier: newUUID, content: content, trigger: trigger)
-
+            
             UNUserNotificationCenter.current().add(request) { error in
-                if let error = error {
-                    print("通知のスケジュールに失敗しました: \(error.localizedDescription)")
+                if error != nil {
+                    print("通知のスケジュールに失敗しました: \(error?.localizedDescription ?? "")")
                 } else {
-                    print("通知がスケジュールされました: \(newUUID)")
+                    print("通知がスケジュールされました")
                 }
             }
         }
