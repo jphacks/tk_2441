@@ -4,7 +4,7 @@ import Firebase
 import SwiftUI
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-    
+    let timerManager = TimerManager()
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         requestNotificationPermission()
         UNUserNotificationCenter.current().delegate = self
@@ -20,6 +20,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     //フォアグラウンドにいる時の通知を検知
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound])
+        //タイマースタート
+        timerManager.startTimer()
         UserDefaults.standard.set(Date(), forKey: "notificationReceivedTime")
         UserDefaults.standard.set(true, forKey: "showStopButton")
     }

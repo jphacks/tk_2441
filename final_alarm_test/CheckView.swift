@@ -18,6 +18,7 @@ struct CheckView: View {
     @AppStorage("notificationID2") private var notification2UUIDString: String = ""
     @AppStorage("notificationID3") private var notification3UUIDString: String = ""
     @AppStorage("showChatView") private var showChatView: Bool = false
+    @StateObject private var timerManager = TimerManager()
     var body: some View {
         VStack {
             Text("\(currentDate, formatter: dateFormatter)")
@@ -82,6 +83,7 @@ struct CheckView: View {
                     }
                     colorIndex += 1
                     showStopButton = false
+                    timerManager.stopTimer()
                 } label: {
                     Text("とめる")
                         .padding(.horizontal, 70)
@@ -103,6 +105,7 @@ struct CheckView: View {
                     notification3UUIDString = ""
                     showwritepage = true
                     showChatView = true
+                    timerManager.stopTimer()
                 } label: {
                     Text("タイムラインへ投稿しよう！")
                         .padding(.horizontal, 70)
