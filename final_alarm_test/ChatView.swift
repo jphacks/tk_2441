@@ -88,6 +88,7 @@ struct ChatView: View {
                                 Text(post.name)
                                     .font(.headline)
                                     .padding(.bottom, 2)
+                                    .shadow(radius: 0)
                                 Spacer()
                             }
                             HStack {
@@ -98,8 +99,8 @@ struct ChatView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.cyan))
-                        .shadow(radius: 5)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(red:0.95,green:0.95,blue:0.95, opacity:1.0)))
+                        .shadow(radius: 2)
                         .padding(.horizontal)
                     }
                 }
