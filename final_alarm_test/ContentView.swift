@@ -62,6 +62,8 @@ struct ContentView: View {
                     print("ユーザーIDの保存に失敗しました: \(error.localizedDescription)")
                 } else {
                     print("ユーザーIDをFirestoreに保存しました: \(newUID)")
+                    //フォローサブコレクションの生成
+                    createFollowingSubcollection(for: newUID)
                     // ローカルストレージに保存（次回起動時にも利用できるように）
                     myUID = newUID
                 }
@@ -70,6 +72,18 @@ struct ContentView: View {
                 // すでにユーザーIDが存在する場合は何もしない
                 print("既存のユーザーIDを使用しています: \(myUID)")
             }
+    }
+    
+    // フォローリストサブコレクションを生成
+    func createFollowingSubcollection(for uid: String) {
+        let followingRef = db.collection("Users").document(uid).collection("following")
+        followingRef.document("init").setData([:]) { error in
+            if let error = error {
+                print("フォローサブコレクションの初期化に失敗しました: \(error.localizedDescription)")
+            } else {
+                print("フォローサブコレクションを初期化しました")
+            }
+        }
     }
     
     // ローカル通知をスケジュールする関数
